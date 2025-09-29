@@ -4,92 +4,62 @@
 **Duration:** 15-20 minutes  
 **Platform:** [Google Colab](https://colab.research.google.com)  
 **Prerequisites:** Basic Python knowledge, Google account  
-**Objective:** Learn to use ChatGPT 5 with images and files
+**Objective:** Learn to use ChatGPT 5's multimodal capabilities for business applications
 
 ---
 
 ## Learning Objectives
 By the end of this lab, you will be able to:
-- Send images to ChatGPT 5 for analysis
-- Process PDF documents from URLs
-- Upload your own files to analyze
-- Combine text and images in one request
+- Analyze business images (charts, products, documents)
+- Process corporate PDFs and reports
+- Upload and analyze internal documents
+- Build practical business automation tools
 
 ---
 
-## Part 1: Setup (2 minutes)
+## Part 1: Environment Setup (2 minutes)
 
 ### Step 1: Create Your Notebook
 1. Go to [https://colab.research.google.com](https://colab.research.google.com)
 2. Click **"New Notebook"**
-3. Rename it to `ChatGPT_5_Images_Files_Lab`
+3. Rename it to `ChatGPT_5_Business_Multimodal_Lab`
 
-### Step 2: Install and Import
+### Step 2: Install Required Libraries
 ```python
-# Install OpenAI library
-!pip install openai --quiet
+# Install required libraries for OpenAI and PDF handling
+!pip install openai reportlab --quiet
 
-# Import what we need
+# Import necessary modules
 from openai import OpenAI
 from getpass import getpass
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import simpleSplit
 ```
 
-### Step 3: Add Your API Key
+### Step 3: Initialize OpenAI Client
 ```python
-# Enter your API key securely
+# Secure API key entry
 api_key = getpass('Enter your OpenAI API key: ')
 
-# Create the client
+# Initialize the OpenAI client
 client = OpenAI(api_key=api_key)
 
-print("✅ Ready to go!")
+print("✅ OpenAI client initialized successfully!")
 ```
 
 ---
 
-## Part 2: Working with Images (5 minutes)
+## Part 2: Business Image Analysis (5 minutes)
 
-### Step 4: Your First Image Analysis
-Let's ask ChatGPT 5 to describe what's in an image:
-
-```python
-# Analyze an image from the web
-response = client.responses.create(
-    model="gpt-5",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "input_text",
-                    "text": "What do you see in this image? Describe it in 2-3 sentences."
-                },
-                {
-                    "type": "input_image",
-                    "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/3b/LeBron_James_Layup_%28Cleveland_vs_Brooklyn_2018%29.jpg"
-                }
-            ]
-        }
-    ]
-)
-
-print("ChatGPT 5 sees:")
-print(response.output_text)
-```
-
-**What's happening:**
-- We send both text (our question) and an image URL
-- ChatGPT 5 analyzes the image and responds
-- The image must be publicly accessible on the internet
-
-### Step 5: Ask Specific Questions About Images
-Now let's ask something specific:
+### Step 4: Analyze Business Charts and Graphs
+Let's analyze a business visualization to extract insights:
 
 ```python
-# Ask a specific question about the image
-def analyze_image(image_url, question):
+# Analyze a business chart or graph
+def analyze_business_chart(image_url):
     """
-    Ask ChatGPT 5 a question about an image
+    Extract data and insights from business charts
     """
     response = client.responses.create(
         model="gpt-5",
@@ -99,7 +69,12 @@ def analyze_image(image_url, question):
                 "content": [
                     {
                         "type": "input_text",
-                        "text": question
+                        "text": """Analyze this business chart and provide:
+                        1. Type of visualization (bar chart, pie chart, etc.)
+                        2. Key metrics shown
+                        3. Main trends or patterns
+                        4. Business insights or recommendations
+                        Format as bullet points."""
                     },
                     {
                         "type": "input_image",
@@ -111,93 +86,24 @@ def analyze_image(image_url, question):
     )
     return response.output_text
 
-# Try it with a food image
-food_image = "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38"
-question = "What ingredients can you identify on this pizza?"
+# Example: Analyze a sales dashboard
+chart_url = "https://images.unsplash.com/photo-1551288049-bebda4e38f71"
+analysis = analyze_business_chart(chart_url)
 
-result = analyze_image(food_image, question)
-print("🍕 Ingredients found:")
-print(result)
+print("📊 Business Chart Analysis:")
+print(analysis)
+print("\n" + "="*50 + "\n")
 ```
 
-### Step 6: Practical Example - Reading Signs and Text
-Let's read text from images (super useful!):
+### Step 5: Product Image Analysis for E-commerce
+Automate product cataloging and description generation:
 
 ```python
-# Read text from a street sign or poster
-sign_image = "https://images.unsplash.com/photo-1502920917128-1aa500764cbd"
-
-response = client.responses.create(
-    model="gpt-5",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "input_text",
-                    "text": "What text can you see in this image? Just list the text you can read."
-                },
-                {
-                    "type": "input_image",
-                    "image_url": sign_image
-                }
-            ]
-        }
-    ]
-)
-
-print("📝 Text found in image:")
-print(response.output_text)
-```
-
----
-
-## Part 3: Working with Documents (5 minutes)
-
-### Step 7: Analyze a PDF from URL
-Let's analyze Warren Buffett's famous letter to shareholders:
-
-```python
-# Analyze a document from a URL
-response = client.responses.create(
-    model="gpt-5",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "input_text",
-                    "text": "What are the 3 main points from this letter? Keep it simple."
-                },
-                {
-                    "type": "input_file",
-                    "file_url": "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
-                }
-            ]
-        }
-    ]
-)
-
-print("📄 Main points from the letter:")
-print(response.output_text)
-```
-
-**Note:** This works with any publicly accessible PDF URL!
-
-### Step 8: Create a Simple Document Summarizer
-Let's make a reusable function:
-
-```python
-def summarize_document(pdf_url, num_points=3):
+# Analyze product images for inventory management
+def analyze_product_for_inventory(image_url):
     """
-    Get key points from any PDF document
-    
-    Args:
-        pdf_url: Link to the PDF
-        num_points: How many key points to extract
+    Extract product details for inventory systems
     """
-    prompt = f"Give me the {num_points} most important points from this document. Use simple language."
-    
     response = client.responses.create(
         model="gpt-5",
         input=[
@@ -206,7 +112,106 @@ def summarize_document(pdf_url, num_points=3):
                 "content": [
                     {
                         "type": "input_text",
-                        "text": prompt
+                        "text": """Analyze this product image for our inventory system:
+                        1. Product category
+                        2. Color variants visible
+                        3. Material (if identifiable)
+                        4. Suggested SKU prefix
+                        5. Professional product description (50 words)
+                        6. Suggested retail price range
+                        Format as structured data."""
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": image_url
+                    }
+                ]
+            }
+        ]
+    )
+    return response.output_text
+
+# Example: Analyze a product for cataloging
+product_url = "https://images.unsplash.com/photo-1542291026-7eec264c27ff"
+product_details = analyze_product_for_inventory(product_url)
+
+print("🏷️ Product Inventory Analysis:")
+print(product_details)
+print("\n" + "="*50 + "\n")
+```
+
+### Step 6: Extract Text from Business Documents
+OCR capabilities for digitizing paper documents:
+
+```python
+# Extract text from scanned documents or receipts
+def extract_text_from_document(image_url):
+    """
+    OCR for business documents, receipts, invoices
+    """
+    response = client.responses.create(
+        model="gpt-5",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": """Extract all readable text from this document image.
+                        If it's a receipt or invoice, also identify:
+                        - Total amount
+                        - Date
+                        - Vendor/Company name
+                        - Key line items"""
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": image_url
+                    }
+                ]
+            }
+        ]
+    )
+    return response.output_text
+
+# Example: Extract text from a document
+document_image = "https://images.unsplash.com/photo-1554224155-6726b3ff858f"
+extracted_text = extract_text_from_document(document_image)
+
+print("📄 Document Text Extraction:")
+print(extracted_text)
+print("\n" + "="*50 + "\n")
+```
+
+---
+
+## Part 3: Corporate PDF Processing (5 minutes)
+
+### Step 7: Financial Report Analysis
+Process quarterly earnings and annual reports:
+
+```python
+# Analyze financial reports
+def analyze_financial_report(pdf_url):
+    """
+    Extract key financial metrics from corporate reports
+    """
+    response = client.responses.create(
+        model="gpt-5",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": """Analyze this financial report and extract:
+                        1. Revenue (current vs previous period)
+                        2. Net profit/loss
+                        3. Key performance indicators mentioned
+                        4. Major risks or challenges noted
+                        5. Executive summary in 3 bullet points
+                        
+                        Format as an executive brief."""
                     },
                     {
                         "type": "input_file",
@@ -218,105 +223,163 @@ def summarize_document(pdf_url, num_points=3):
     )
     return response.output_text
 
-# Try it with any PDF
-test_pdf = "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
-summary = summarize_document(test_pdf, 5)
+# Example: Analyze Berkshire Hathaway annual letter
+report_url = "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
+financial_summary = analyze_financial_report(report_url)
 
-print("📋 Document Summary:")
-print(summary)
+print("💰 Financial Report Analysis:")
+print(financial_summary)
+print("\n" + "="*50 + "\n")
+```
+
+### Step 8: Contract and Legal Document Review
+Automate contract analysis for key terms:
+
+```python
+# Review contracts for important terms
+def review_contract(pdf_url):
+    """
+    Extract key terms from contracts and agreements
+    """
+    response = client.responses.create(
+        model="gpt-5",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": """Review this contract and identify:
+                        1. Parties involved
+                        2. Contract value/payment terms
+                        3. Key deliverables
+                        4. Important dates/deadlines
+                        5. Termination clauses
+                        6. Liability/penalty clauses
+                        
+                        Highlight any unusual or high-risk terms."""
+                    },
+                    {
+                        "type": "input_file",
+                        "file_url": pdf_url
+                    }
+                ]
+            }
+        ]
+    )
+    return response.output_text
+
+# Example with a public filing
+contract_url = "https://www.sec.gov/Archives/edgar/data/1018724/000101872423000013/amzn-20221231.pdf"
+contract_review = review_contract(contract_url)
+
+print("⚖️ Contract Review Summary:")
+print(contract_review)
+print("\n" + "="*50 + "\n")
 ```
 
 ---
 
-## Part 4: Uploading Your Own Files (4 minutes)
+## Part 4: Internal Document Upload (4 minutes)
 
-### Step 9: Create a Simple File to Upload
-First, let's create a text file to work with:
-
-```python
-# Create a simple story file
-story = """
-The Magic Bakery
-
-Once upon a time, there was a bakery where the bread could talk.
-Every morning, the croissants would greet customers in French.
-The donuts would tell jokes to make people smile.
-And the birthday cakes would sing happy birthday!
-
-One day, a sad little girl came in.
-The bread asked her what was wrong.
-She said she had no friends at her new school.
-So all the pastries threw her a party right there in the bakery!
-
-From that day on, she visited every week.
-And she was never lonely again.
-
-The End.
-"""
-
-# Save it as a file
-with open('magic_bakery.txt', 'w') as f:
-    f.write(story)
-
-print("✅ Created story file: magic_bakery.txt")
-```
-
-### Step 10: Upload and Analyze Your File
-Now let's upload it and ask questions:
+### Step 9: Create and Upload Internal Documents
+Since the API only accepts PDFs, we'll create a helper function:
 
 ```python
-# Upload the file to OpenAI
-file = client.files.create(
-    file=open("magic_bakery.txt", "rb"),
-    purpose="user_data"
-)
-
-print(f"📤 File uploaded! ID: {file.id}")
-
-# Now ask a question about it
-response = client.responses.create(
-    model="gpt-5",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "input_file",
-                    "file_id": file.id
-                },
-                {
-                    "type": "input_text",
-                    "text": "What made the little girl happy in this story?"
-                }
-            ]
-        }
-    ]
-)
-
-print("\n💭 ChatGPT's answer:")
-print(response.output_text)
-```
-
-### Step 11: Upload and Analyze a PDF
-Let's create a simple function to handle any file:
-
-```python
-def upload_and_ask(file_path, question):
+# Helper function to create PDFs from text
+def create_pdf_from_text(text_content, filename="document.pdf"):
     """
-    Upload a file and ask a question about it
+    Convert text content to PDF for upload
+    """
+    c = canvas.Canvas(filename, pagesize=letter)
+    width, height = letter
     
-    Args:
-        file_path: Path to your file
-        question: What you want to know
+    # Set up formatting
+    margin = 50
+    y_position = height - margin
+    line_height = 15
+    max_width = width - (2 * margin)
+    
+    # Process text
+    lines = text_content.split('\n')
+    
+    for line in lines:
+        if y_position < margin:  # New page if needed
+            c.showPage()
+            y_position = height - margin
+        
+        if line:
+            wrapped_lines = simpleSplit(line, "Helvetica", 12, max_width)
+            for wrapped_line in wrapped_lines:
+                c.drawString(margin, y_position, wrapped_line)
+                y_position -= line_height
+        else:
+            y_position -= line_height
+    
+    c.save()
+    return filename
+
+# Create a sample business memo
+memo = """INTERNAL MEMO
+
+TO: All Department Heads
+FROM: Operations Team
+DATE: January 15, 2024
+RE: Q1 2024 Operational Efficiency Initiative
+
+OBJECTIVE:
+Implement cost-saving measures to achieve 15% operational efficiency improvement.
+
+KEY INITIATIVES:
+1. Automation of manual reporting processes
+2. Consolidation of vendor contracts
+3. Energy consumption reduction program
+4. Remote work optimization
+
+EXPECTED OUTCOMES:
+- $2.5M annual cost savings
+- 30% reduction in manual tasks
+- 20% decrease in energy costs
+- Improved employee satisfaction scores
+
+TIMELINE:
+Phase 1: Jan-Feb 2024 - Assessment and planning
+Phase 2: Mar-Apr 2024 - Implementation
+Phase 3: May-Jun 2024 - Monitoring and adjustment
+
+ACTION REQUIRED:
+Submit departmental efficiency plans by January 31, 2024."""
+
+# Create PDF
+pdf_file = create_pdf_from_text(memo, "company_memo.pdf")
+print(f"✅ Created PDF: {pdf_file}")
+```
+
+### Step 10: Upload and Analyze Internal Documents
+```python
+# Upload and analyze the internal document
+def analyze_internal_document(pdf_path, analysis_type="summary"):
+    """
+    Upload and analyze internal company documents
     """
     # Upload the file
-    with open(file_path, 'rb') as f:
+    with open(pdf_path, 'rb') as f:
         uploaded = client.files.create(
             file=f,
             purpose="user_data"
         )
     
-    # Ask the question
+    print(f"📤 File uploaded. ID: {uploaded.id}")
+    
+    # Define analysis types
+    prompts = {
+        "summary": "Provide a concise executive summary of this document.",
+        "action_items": "List all action items and deadlines mentioned.",
+        "metrics": "Extract all metrics, KPIs, and quantifiable goals.",
+        "risks": "Identify potential risks or challenges mentioned."
+    }
+    
+    # Analyze the document
     response = client.responses.create(
         model="gpt-5",
         input=[
@@ -329,7 +392,7 @@ def upload_and_ask(file_path, question):
                     },
                     {
                         "type": "input_text",
-                        "text": question
+                        "text": prompts.get(analysis_type, prompts["summary"])
                     }
                 ]
             }
@@ -338,22 +401,98 @@ def upload_and_ask(file_path, question):
     
     return response.output_text
 
-# Test it with our story
-answer = upload_and_ask('magic_bakery.txt', 'How many characters are in this story?')
-print("Answer:", answer)
+# Analyze for action items
+action_items = analyze_internal_document("company_memo.pdf", "action_items")
+print("\n📋 Action Items Extracted:")
+print(action_items)
+
+# Analyze for metrics
+metrics = analyze_internal_document("company_memo.pdf", "metrics")
+print("\n📊 Metrics and KPIs:")
+print(metrics)
+print("\n" + "="*50 + "\n")
 ```
 
 ---
 
-## Part 5: Combining Everything (4 minutes)
+## Part 5: Combined Business Applications (4 minutes)
 
-### Step 12: Image + Text Together
-Let's build something fun - a recipe helper!
+### Step 11: Invoice Processing System
+Combine image and text analysis for accounts payable:
 
 ```python
-def get_recipe_from_food_image(image_url):
+def process_invoice(image_url=None, pdf_url=None, additional_notes=""):
     """
-    Look at food and suggest how to make it
+    Complete invoice processing system
+    
+    Args:
+        image_url: Scanned invoice image
+        pdf_url: Digital invoice PDF
+        additional_notes: PO numbers or special instructions
+    """
+    content = [
+        {
+            "type": "input_text",
+            "text": """Process this invoice and extract:
+            1. Vendor name and contact
+            2. Invoice number and date
+            3. Total amount due
+            4. Line items with amounts
+            5. Payment terms
+            6. Due date
+            
+            Flag any anomalies or missing information.
+            Format as structured data for our accounting system."""
+        }
+    ]
+    
+    # Add image if provided
+    if image_url:
+        content.append({
+            "type": "input_image",
+            "image_url": image_url
+        })
+    
+    # Add PDF if provided
+    if pdf_url:
+        content.append({
+            "type": "input_file",
+            "file_url": pdf_url
+        })
+    
+    # Add notes
+    if additional_notes:
+        content.append({
+            "type": "input_text",
+            "text": f"Additional information: {additional_notes}"
+        })
+    
+    response = client.responses.create(
+        model="gpt-5",
+        input=[{"role": "user", "content": content}]
+    )
+    
+    return response.output_text
+
+# Example: Process an invoice image
+invoice_image = "https://images.unsplash.com/photo-1554224155-6726b3ff858f"
+invoice_data = process_invoice(
+    image_url=invoice_image,
+    additional_notes="PO#2024-1234, Budget code: MKT-Q1"
+)
+
+print("🧾 Invoice Processing Results:")
+print(invoice_data)
+print("\n" + "="*50 + "\n")
+```
+
+### Step 12: Competitive Analysis Tool
+Analyze competitor materials and reports:
+
+```python
+def competitive_analysis(company_name, document_url):
+    """
+    Analyze competitor documents for strategic insights
     """
     response = client.responses.create(
         model="gpt-5",
@@ -363,15 +502,19 @@ def get_recipe_from_food_image(image_url):
                 "content": [
                     {
                         "type": "input_text",
-                        "text": """Look at this food and give me:
-                        1. What dish is this?
-                        2. Three main ingredients I'd need
-                        3. How long it might take to make
-                        Keep it simple!"""
+                        "text": f"""Analyze this {company_name} document for competitive intelligence:
+                        1. Business strategy and focus areas
+                        2. Financial performance indicators
+                        3. New products or services mentioned
+                        4. Market expansion plans
+                        5. Technology investments
+                        6. Weaknesses or challenges admitted
+                        
+                        Provide actionable insights for our strategy team."""
                     },
                     {
-                        "type": "input_image",
-                        "image_url": image_url
+                        "type": "input_file",
+                        "file_url": document_url
                     }
                 ]
             }
@@ -379,139 +522,167 @@ def get_recipe_from_food_image(image_url):
     )
     return response.output_text
 
-# Try with a pasta image
-pasta = "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9"
-recipe_help = get_recipe_from_food_image(pasta)
+# Example: Analyze competitor's annual report
+competitor_report = "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
+insights = competitive_analysis("Berkshire Hathaway", competitor_report)
 
-print("🍝 Recipe Helper:")
-print(recipe_help)
+print("🎯 Competitive Intelligence Report:")
+print(insights)
+print("\n" + "="*50 + "\n")
 ```
 
 ---
 
-## 🎯 Your Turn: Build a Study Buddy
+## 🎯 Challenge: Build a Document Intelligence System
 
-Now it's time to practice! Create a simple study helper that can:
+Create a comprehensive document processing system for your business operations.
 
-1. **Read images of notes or textbook pages**
-2. **Answer questions about them**
-3. **Make it conversational and helpful**
-
-### Challenge Requirements:
-- Create a function called `study_buddy()`
-- It should take an image URL and a question
-- It should give helpful, encouraging responses
-- Add error handling (what if the image doesn't load?)
+### Requirements:
+1. **Process Multiple Document Types**: Handle invoices, contracts, and reports
+2. **Extract Structured Data**: Return data in a format ready for databases
+3. **Batch Processing**: Handle multiple documents efficiently
+4. **Error Handling**: Gracefully handle various file formats and errors
 
 ### Starter Code:
 ```python
-def study_buddy(image_url, question):
-    """
-    A helpful study assistant that reads your notes
+class BusinessDocumentProcessor:
+    def __init__(self, client):
+        self.client = client
+        self.processed_documents = []
+        
+    def process_document(self, doc_source, doc_type="general"):
+        """
+        Process a business document based on type
+        
+        Args:
+            doc_source: URL or file path
+            doc_type: invoice, contract, report, memo
+        
+        Returns:
+            Structured data extraction
+        """
+        
+        # TODO: Implement document type detection
+        # TODO: Apply appropriate prompts for each type
+        # TODO: Return structured JSON output
+        
+        pass
     
-    Args:
-        image_url: URL of your notes/textbook image
-        question: What you want to know
+    def batch_process(self, document_list):
+        """
+        Process multiple documents and generate summary report
+        """
+        # TODO: Process each document
+        # TODO: Track success/failure
+        # TODO: Generate executive summary
+        
+        pass
     
-    Returns:
-        A helpful, encouraging response
-    """
-    
-    # TODO: Create a friendly prompt that:
-    # - Answers the question
-    # - Encourages the student
-    # - Keeps it simple
-    
-    # TODO: Make the API call
-    
-    # TODO: Add try/except for errors
-    
-    pass  # Replace this with your code!
+    def export_to_json(self, output_file="results.json"):
+        """
+        Export all results to JSON for integration
+        """
+        # TODO: Format results
+        # TODO: Save to file
+        
+        pass
 
-# Test your study buddy
-# notes_image = "URL_to_an_image_of_notes"
-# help_me = study_buddy(notes_image, "What are the main points here?")
-# print(help_me)
+# Initialize processor
+processor = BusinessDocumentProcessor(client)
+
+# Test your implementation
+# result = processor.process_document("invoice.pdf", "invoice")
+# print(result)
 ```
 
-### 💡 Hints:
-- Make your prompt friendly: "Hi! I'm your study buddy..."
-- Add encouragement: "Great question!" or "You're doing great!"
-- Handle errors gracefully: "Oops, I couldn't read that image. Can you try another?"
+### 💡 Implementation Tips:
+- Use consistent JSON schemas for each document type
+- Include confidence scores for extracted data
+- Log processing times for performance monitoring
+- Implement retry logic for API failures
 
-### 🌟 Bonus (Optional):
-If you finish early, try adding:
-1. **Quiz Mode**: Have it ask YOU a question about the material
-2. **Summary Mode**: Automatically create study notes
-3. **Multiple Images**: Handle more than one image at once
+### 🌟 Bonus Features (Optional):
+1. **Multi-language Support**: Detect and translate foreign documents
+2. **Compliance Checking**: Flag documents missing required information
+3. **Trend Analysis**: Track changes across document versions
 
 ---
 
-## Testing Your Code
+## Common Business Use Cases
 
-### Test Images You Can Use:
+### Examples of What You Can Build:
 ```python
-# Here are some test images that work well:
-test_images = {
-    "basketball": "https://upload.wikimedia.org/wikipedia/commons/3/3b/LeBron_James_Layup_%28Cleveland_vs_Brooklyn_2018%29.jpg",
-    "food": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
-    "nature": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",
-    "city": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000",
-    "book": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570"
-}
+# Purchase Order Processor
+def process_purchase_order(po_url):
+    # Extract vendor, items, quantities, delivery dates
+    pass
 
-# Test PDFs that work:
-test_pdfs = {
-    "berkshire": "https://www.berkshirehathaway.com/letters/2023ltr.pdf",
-    # Add other public PDFs you find
-}
+# Expense Report Analyzer  
+def analyze_expense_report(receipt_images):
+    # Categorize expenses, check policy compliance
+    pass
+
+# RFP Response Generator
+def analyze_rfp(rfp_url):
+    # Extract requirements, deadlines, evaluation criteria
+    pass
+
+# Financial Statement Analyzer
+def analyze_financial_statements(statement_url):
+    # Calculate ratios, identify trends, benchmark
+    pass
 ```
 
 ---
 
 ## Troubleshooting
 
-**"Image not found" error:**
-- Make sure the URL is public (not from Google Drive or private sites)
-- Try opening the URL in a new browser tab first
+**Common Issues:**
+
+**"Invalid file format" error:**
+- Solution: Convert to PDF using the `create_pdf_from_text()` function
+- The API only accepts PDF files, not .txt, .docx, etc.
 
 **"File too large" error:**
-- PDFs should be under 20MB
-- Images should be under 10MB
+- Solution: PDFs must be under 20MB
+- Consider splitting large documents
 
-**"API key invalid" error:**
-- Double-check you copied your entire API key
-- Make sure there are no extra spaces
+**"Rate limit exceeded":**
+- Solution: Implement delays between requests
+- Use exponential backoff for retries
 
 ---
 
 ## Resources
 
 - **OpenAI Platform**: [https://platform.openai.com](https://platform.openai.com)
+- **API Documentation**: [https://platform.openai.com/docs](https://platform.openai.com/docs)
 - **API Keys**: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-- **Documentation**: [https://platform.openai.com/docs](https://platform.openai.com/docs)
-- **Google Colab Help**: [https://colab.research.google.com/notebooks/welcome.ipynb](https://colab.research.google.com/notebooks/welcome.ipynb)
+- **Rate Limits**: [https://platform.openai.com/docs/guides/rate-limits](https://platform.openai.com/docs/guides/rate-limits)
+- **Google Colab**: [https://colab.research.google.com](https://colab.research.google.com)
 
 ---
 
-## Lab Checklist
+## Lab Completion Checklist
 
-- [ ] Set up OpenAI client
-- [ ] Analyzed an image successfully
-- [ ] Read a PDF from a URL
-- [ ] Uploaded your own file
-- [ ] Combined image and text in one request
-- [ ] Built the Study Buddy function
-- [ ] Tested with at least 2 different images
+- [ ] Configured OpenAI client successfully
+- [ ] Analyzed business charts and graphs
+- [ ] Extracted text from document images
+- [ ] Processed financial reports from URLs
+- [ ] Created and uploaded PDF documents
+- [ ] Built invoice processing function
+- [ ] Implemented document processor class
+- [ ] Tested with multiple document types
 
 ---
 
-## What You Learned
+## Key Takeaways
 
-Congratulations! You can now:
-- 🖼️ Send images to ChatGPT 5 for analysis
-- 📄 Process documents from the web
-- 📤 Upload and analyze your own files
-- 🎯 Build practical applications with multimodal AI
+You've learned to:
+- 📊 Extract insights from business visualizations
+- 📄 Process corporate documents automatically
+- 🏷️ Analyze products for inventory management
+- 💰 Review financial reports and contracts
+- 🧾 Build practical business automation tools
 
-**Great job!** 🎉 You're ready to build cool projects with ChatGPT 5's multimodal features!
+**Excellent work!** 🎉 You're now equipped to build AI-powered document processing systems for real business applications!
